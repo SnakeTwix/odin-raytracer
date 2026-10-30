@@ -7,11 +7,18 @@ import "vec"
 import "hittable"
 import "camera"
 import "image"
+import thread "core:thread"
+import time "core:time"
 
 main :: proc() {
     WIDTH :: 1920
     ASPECT_RATIO :: 16.0 / 9.0
     CAMERA_SAMPLE_PER_PIXEL :: 100
+    THREAD_COUNT :: 12
+
+    thread_pool : thread.Pool
+
+    thread.pool_init(&thread_pool, context.allocator, THREAD_COUNT)
 
     // World
     world : hittable.List
@@ -36,9 +43,15 @@ main :: proc() {
         type = image.Type.Ppm_P6,
     }
 
+    start_time := time.tick_now()
     image.write_header(&img)
 
-    camera.render(cam, &img, world)
+    thread.pool_start(&thread_pool)
+    camera.render_threaded(cam, &img, world, &thread_pool)
+//    camera.render(cam, &img, world)
+
+    elapsed := time.tick_since(start_time)
+    fmt.println("Rendering took: ", time.duration_milliseconds(elapsed), "ms")
 }
 
 
