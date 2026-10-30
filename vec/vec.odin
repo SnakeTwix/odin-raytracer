@@ -4,6 +4,10 @@ import "core:math"
 
 Vec3 :: [3]f64
 
+Color :: Vec3
+
+Point3 :: Vec3
+
 length_squared :: proc(vec: Vec3) -> f64 {
     return vec.x * vec.x + vec.y * vec.y + vec.z * vec.z
 }
@@ -19,6 +23,3 @@ unit :: proc(vec: Vec3) -> Vec3 {
 dot :: proc(vec1: Vec3, vec2: Vec3) -> f64 {
     return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z
 }
-Color :: Vec3
-
-Point3 :: Vec3

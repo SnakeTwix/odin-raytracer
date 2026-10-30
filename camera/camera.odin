@@ -5,50 +5,41 @@ import "../ray"
 import "../vec"
 import "../interval"
 import "core:math"
-import "core:bufio"
 import "core:fmt"
+import "../image"
+import "core:math/rand"
 
 Camera :: struct #all_or_none {
     aspect_ratio: f64,
+    pixel_samples_scale: f64,
     image_width: uint,
     image_height: uint,
     center: vec.Point3,
     pixel_start: vec.Point3,
     pixel_delta_u: vec.Vec3,
     pixel_delta_v: vec.Vec3,
+    samples_per_pixel: uint,
 }
 
-render :: proc(camera: Camera, writer: ^bufio.Writer, world: hittable.Hittable) {
-    headerBuf : [32]u8
-    headerStr := fmt.bprintf(headerBuf[:], "P3\n%d %d\n255\n", camera.image_width, camera.image_height)
-
-    bufio.writer_write_string(writer, headerStr)
-
+render :: proc(camera: Camera, img: ^image.Image, world: hittable.Hittable) {
     for y : uint = 0; y < camera.image_height; y += 1 {
         fmt.println("Scanlines remaining: ", camera.image_height - y)
         for x : uint= 0; x < camera.image_width; x += 1 {
+            pixel_color := vec.Color{ 0, 0, 0 }
+            for sample := uint(0); sample < camera.samples_per_pixel; sample += 1 {
+                r := get_ray(camera, x, y)
+                pixel_color += color(r, world)
+            }
 
-            pixel_center := camera.pixel_start + (f64(x) * camera.pixel_delta_u) + (f64(y) * camera.pixel_delta_v)
-            ray_direction := pixel_center - camera.center
-            r := ray.Ray{ camera.center, ray_direction }
-
-            pixel_color := color(r, world)
-
-            write_color(writer, pixel_color)
+            image.write_pixel(img, pixel_color * camera.pixel_samples_scale)
         }
     }
 
-    // Flush any remaining buffered data.
-    err := bufio.writer_flush(writer)
-    if err != nil {
-        fmt.eprintln(err)
-        return
-    }
-
+    image.finish(img)
     fmt.println("Done.")
 }
 
-default_setup :: proc(image_width: uint, aspect_ratio: f64) -> Camera {
+default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: uint) -> Camera {
     image_height := uint(f64(image_width) / aspect_ratio)
     image_height = (image_height < 1) ? 1 : image_height
 
@@ -77,6 +68,8 @@ default_setup :: proc(image_width: uint, aspect_ratio: f64) -> Camera {
         pixel_delta_v = pixel_delta_v,
         pixel_delta_u = pixel_delta_u,
         pixel_start = pixel_start_loc,
+        samples_per_pixel = samples_per_pixel,
+        pixel_samples_scale = 1.0 / f64(samples_per_pixel),
     }
 }
 
@@ -93,15 +86,18 @@ color :: proc(ray: ray.Ray, world: hittable.Hittable) -> vec.Color {
     return gradient
 }
 
-write_color :: proc(writer: ^bufio.Writer, color: vec.Color) {
-    pixelBuf : [len("255 255 255\n")]u8
-    pixel := pixelBuf[:]
-    pixelStr : string
+get_ray :: proc(camera: Camera, x: uint, y: uint) -> ray.Ray {
+    offset := sample_square()
+    pixel_sample := camera.pixel_start +
+    ((f64(x) + offset.x) * camera.pixel_delta_u) +
+    ((f64(y) + offset.y) * camera.pixel_delta_v)
 
-    ir := u64(255.999 * color.r)
-    ig := u64(255.999 * color.g)
-    ib := u64(255.999 * color.b)
+    return ray.Ray{
+        origin = camera.center,
+        direction = pixel_sample - camera.center,
+    }
+}
 
-    pixelStr = fmt.bprintf(pixel, "%d %d %d\n", ir, ig, ib)
-    bufio.writer_write_string(writer, pixelStr)
+sample_square :: proc() -> vec.Point3 {
+    return vec.Point3{ rand.float64() - 0.5, rand.float64() - 0.5, 0 }
 }

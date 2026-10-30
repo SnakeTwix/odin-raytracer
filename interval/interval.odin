@@ -19,5 +19,17 @@ surrounds :: proc(interval: Interval, x: f64) -> bool {
     return interval.min < x && x < interval.max
 }
 
-Empty :: Interval{min = math.INF_F64, max = math.NEG_INF_F64}
-All :: Interval{min = math.NEG_INF_F64, max = math.INF_F64}
+clamp :: proc(interval: Interval, x: f64) -> f64 {
+    if x < interval.min {
+        return interval.min
+    }
+
+    if x > interval.max {
+        return interval.max
+    }
+
+    return x
+}
+
+Empty :: Interval{ min = math.INF_F64, max = math.NEG_INF_F64 }
+All :: Interval{ min = math.NEG_INF_F64, max = math.INF_F64 }
