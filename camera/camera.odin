@@ -43,23 +43,25 @@ render :: proc(camera: Camera, img: ^image.Image, world: hittable.Hittable) {
 }
 
 render_threaded :: proc(camera: Camera, img: ^image.Image, world: hittable.Hittable, thread_pool: ^thread.Pool) {
-    amount_of_tasks_to_schedule := uint(len(thread_pool.threads)) * 2
-    amount_of_tasks_to_schedule = math.min(camera.image_height, amount_of_tasks_to_schedule)
+    worker_count := uint(len(thread_pool.threads))
+    worker_count = math.min(camera.image_height, worker_count)
 
-    row_buffers := make([][]vec.Color, amount_of_tasks_to_schedule)
-    rows_in_use := make([]bool, amount_of_tasks_to_schedule)
+
+    row_buffer_count := worker_count * 2
+    row_buffers := make([][]vec.Color, row_buffer_count)
+    rows_in_use := make([]bool, row_buffer_count)
 
     for i := 0; i < len(row_buffers); i += 1 {
         row_buffers[i] = make([]vec.Color, camera.image_width)
     }
 
-    input_ch, err := chan.create_buffered(chan.Chan(RowData), amount_of_tasks_to_schedule, context.allocator)
+    input_ch, err := chan.create_buffered(chan.Chan(RowData), worker_count, context.allocator)
     assert(err == .None)
 
     send_input_ch := chan.as_send(input_ch)
     recv_input_ch := chan.as_recv(input_ch)
 
-    output_ch, err_2 := chan.create_buffered(chan.Chan(RowData), amount_of_tasks_to_schedule, context.allocator)
+    output_ch, err_2 := chan.create_buffered(chan.Chan(RowData), worker_count, context.allocator)
     assert(err_2 == .None)
 
     send_output_ch := chan.as_send(output_ch)
@@ -71,15 +73,15 @@ render_threaded :: proc(camera: Camera, img: ^image.Image, world: hittable.Hitta
     }
 
     // Launch tasks
-    for i := 0; i < int(amount_of_tasks_to_schedule); i += 1 {
+    for i := 0; i < int(worker_count); i += 1 {
         thread.pool_add_task(thread_pool, runtime.nil_allocator(), calculate_row, task_channels, i)
     }
 
     tasks_queued : uint = 0
     need_row : uint = 0
-    rendered_rows := make([dynamic]RowData, 0, amount_of_tasks_to_schedule)
+    rendered_rows := make([dynamic]RowData, 0, row_buffer_count)
     for y : uint = 0; y < camera.image_height; y += 1 {
-        if tasks_queued >= amount_of_tasks_to_schedule {
+        if tasks_queued >= len(row_buffers) {
             row_data, _ := chan.recv(recv_output_ch)
             current_row := row_data
 
@@ -99,10 +101,13 @@ render_threaded :: proc(camera: Camera, img: ^image.Image, world: hittable.Hitta
                 tasks_queued -= 1
 
                 found_new_row := false
-                for other_row in rendered_rows {
+                for i := 0; i < len(rendered_rows); i += 1 {
+                    other_row := rendered_rows[i]
+
                     if other_row.row == need_row {
                         current_row = other_row
                         found_new_row = true
+                        unordered_remove(&rendered_rows, i)
                         break
                     }
                 }
@@ -115,7 +120,7 @@ render_threaded :: proc(camera: Camera, img: ^image.Image, world: hittable.Hitta
         }
 
         row_buffer_index: int = -1
-        for i := 0; i < int(amount_of_tasks_to_schedule); i += 1 {
+        for i := 0; i < len(row_buffers); i += 1 {
             if !rows_in_use[i] {
                 row_buffer_index = i
                 break
@@ -175,7 +180,7 @@ render_threaded :: proc(camera: Camera, img: ^image.Image, world: hittable.Hitta
 
 
     // Clear the tasks
-    for i : uint = 0; i < amount_of_tasks_to_schedule; i += 1 {
+    for i : uint = 0; i < worker_count; i += 1 {
         for {
             _, ok := thread.pool_pop_done(thread_pool)
 
