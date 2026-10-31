@@ -2,7 +2,6 @@
 
 import "../vec"
 import "../ray"
-import fmt "core:fmt"
 import math "core:math"
 import rand "core:math/rand"
 
@@ -24,7 +23,6 @@ material_scatter :: proc(material: Material, r: ray.Ray, rec: HitRecord) -> (boo
 
     return false, vec.Color{ }, ray.Ray{ }
 }
-
 
 Lambertian :: struct {
     albedo: vec.Color,
@@ -59,7 +57,7 @@ metal_scatter :: proc(material: Metal, r: ray.Ray, rec: HitRecord) -> (bool, vec
 
 Dielectric :: struct #all_or_none {
     albedo: vec.Color,
-    refraction_index: f64
+    refraction_index: f64,
 }
 
 dielectric_scatter :: proc(material: Dielectric, r: ray.Ray, rec: HitRecord) -> (bool, vec.Color, ray.Ray) {

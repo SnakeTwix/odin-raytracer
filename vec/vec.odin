@@ -62,6 +62,16 @@ random_on_hempishere :: proc(normal: Vec3) -> Vec3 {
     return -sphere_vec
 }
 
+random_on_disk :: proc() -> Vec3 {
+    for {
+        p := Vec3{ rand.float64(), rand.float64(), 0 }
+        if length_squared(p) < 1 {
+            return p
+        }
+    }
+}
+
+
 is_near_zero :: proc(vec: Vec3) -> bool {
     threshold :: 1e-8
 

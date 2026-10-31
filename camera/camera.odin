@@ -31,7 +31,12 @@ Camera :: struct #all_or_none {
 
     u: vec.Vec3,
     v: vec.Vec3,
-    w: vec.Vec3
+    w: vec.Vec3,
+
+    defocus_angle: f64,
+    focus_distance: f64,
+    defocus_disk_u: vec.Vec3,
+    defocus_disk_v: vec.Vec3,
 }
 
 render :: proc(camera: Camera, img: ^image.Image, world: hittable.Hittable) {
@@ -245,21 +250,19 @@ render_threaded :: proc(camera: Camera, img: ^image.Image, world: hittable.Hitta
     }
 }
 
-default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: uint, vfov: f64, lookfrom: vec.Point3, lookat: vec.Point3, vup: vec.Vec3) -> Camera {
+default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: uint, vfov: f64, lookfrom: vec.Point3, lookat: vec.Point3, vup: vec.Vec3, defocus_angle: f64, focus_distance: f64) -> Camera {
     image_height := uint(f64(image_width) / aspect_ratio)
     image_height = (image_height < 1) ? 1 : image_height
 
     camera_center := lookfrom
 
     // Camera
-    focal_length := vec.length((lookfrom - lookat))
     theta := math.to_radians(vfov)
     h := math.tan_f64(theta / 2)
-
-    viewport_height := 2 * h * focal_length
+    viewport_height := 2 * h * focus_distance
     viewport_width := viewport_height * (f64(image_width) / f64(image_height))
 
-    w := vec.unit(lookfrom - lookfrom)
+    w := vec.unit(lookfrom - lookat)
     u := vec.unit(vec.cross(vup, w))
     v := vec.cross(w, u)
 
@@ -270,8 +273,10 @@ default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: u
     pixel_delta_v := viewport_v / f64(image_height)
 
     // Upper left pixel
-    viewport_upper_left := camera_center - (focal_length * w) - viewport_u / 2 - viewport_v / 2
+    viewport_upper_left := camera_center - (focus_distance * w) - viewport_u / 2 - viewport_v / 2
     pixel_start_loc := viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
+
+    defocus_radius := focus_distance * math.tan(math.to_radians(defocus_angle / 2))
 
     return Camera{
         image_height = image_height,
@@ -283,7 +288,7 @@ default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: u
         pixel_start = pixel_start_loc,
         samples_per_pixel = samples_per_pixel,
         pixel_samples_scale = 1.0 / f64(samples_per_pixel),
-        max_ray_depth = 50,
+        max_ray_depth = 100,
         vfov = vfov,
         lookform = lookfrom,
         lookat = lookat,
@@ -291,6 +296,10 @@ default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: u
         w = w,
         v = v,
         u = u,
+        defocus_angle = defocus_angle,
+        focus_distance = focus_distance,
+        defocus_disk_u = u * defocus_radius,
+        defocus_disk_v = v * defocus_radius,
     }
 }
 
@@ -322,10 +331,24 @@ get_ray :: proc(camera: Camera, x: uint, y: uint) -> ray.Ray {
     ((f64(x) + offset.x) * camera.pixel_delta_u) +
     ((f64(y) + offset.y) * camera.pixel_delta_v)
 
-    return ray.Ray{
-        origin = camera.center,
-        direction = pixel_sample - camera.center,
+    ray_origin : vec.Point3
+    if camera.defocus_angle <= 0 {
+        ray_origin = camera.center
+    } else {
+        ray_origin = defocus_disk_sample(camera)
     }
+
+    return ray.Ray{
+        origin = ray_origin,
+        direction = pixel_sample - ray_origin,
+    }
+}
+
+defocus_disk_sample :: proc(camera: Camera) -> vec.Point3 {
+    p := vec.random_on_disk()
+//    fmt.println("random point on disk", p)
+
+    return camera.center + (p[0] * camera.defocus_disk_u) + (p[1] * camera.defocus_disk_v)
 }
 
 sample_square :: proc() -> vec.Point3 {
