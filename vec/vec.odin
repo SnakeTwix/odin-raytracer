@@ -66,3 +66,11 @@ is_near_zero :: proc(vec: Vec3) -> bool {
 reflect :: proc(vec: Vec3, normal: Vec3) -> Vec3 {
     return vec - 2 * dot(vec, normal) * normal
 }
+
+refract :: proc(vec: Vec3, normal: Vec3, refractor: f64) -> Vec3 {
+    cos_theta := min(dot(-vec, normal), 1.0)
+    r_out_perp := refractor * (vec + cos_theta * normal)
+    r_out_parallel := -math.sqrt(abs(1 - length_squared(r_out_perp))) * normal
+
+    return r_out_perp + r_out_parallel
+}

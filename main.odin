@@ -13,8 +13,8 @@ import time "core:time"
 main :: proc() {
     WIDTH :: 400
     ASPECT_RATIO :: 16.0 / 9.0
-    CAMERA_SAMPLE_PER_PIXEL :: 1000
-    THREAD_COUNT :: 8
+    CAMERA_SAMPLE_PER_PIXEL :: 500
+    THREAD_COUNT :: 12
 
     thread_pool : thread.Pool
 
@@ -23,14 +23,16 @@ main :: proc() {
     // Materials
     material_ground := hittable.Lambertian{albedo = vec.Color{.8, .8, .0}}
     material_center := hittable.Lambertian{albedo = vec.Color{.1, .2, .5}}
-    material_left := hittable.Metal{albedo = vec.Color{.8, .8, .8}}
-    material_right := hittable.Metal{albedo = vec.Color{.8, .6, .2}}
+    material_left := hittable.Dielectric{albedo = vec.Color{1, 1, 1}, refraction_index = 1.5}
+    material_bubble := hittable.Dielectric{albedo = vec.Color{1, 1, 1}, refraction_index = 1.0 / 1.5}
+    material_right := hittable.Metal{albedo = vec.Color{.8, .6, .2}, fuzz = 0.05}
 
     // World
     world : hittable.List
     hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 0, -100.5, -1 }, radius = 100, material = material_ground })
-    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 0, 0, -1.2 }, radius = 0.5, material = material_center })
+    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 0, 0, -1.5 }, radius = 0.5, material = material_center })
     hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ -1, 0, -1 }, radius = 0.5, material = material_left })
+    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ -1, 0, -1 }, radius = 0.4, material = material_bubble })
     hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 1, 0, -1 }, radius = 0.5, material = material_right })
 
     cam := camera.default_setup(WIDTH, ASPECT_RATIO, CAMERA_SAMPLE_PER_PIXEL)
