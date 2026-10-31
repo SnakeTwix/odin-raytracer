@@ -25,6 +25,11 @@ dot :: proc(vec1: Vec3, vec2: Vec3) -> f64 {
     return vec1.x * vec2.x + vec1.y * vec2.y + vec1.z * vec2.z
 }
 
+cross :: proc(vec1: Vec3, vec2: Vec3) -> Vec3 {
+    i := vec1.yzx * vec2.zxy
+    j := vec1.zxy * vec2.yzx
+    return i - j
+}
 random :: proc() -> Vec3 {
     return Vec3{ rand.float64(), rand.float64(), rand.float64() }
 }

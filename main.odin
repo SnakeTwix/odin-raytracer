@@ -21,11 +21,11 @@ main :: proc() {
     thread.pool_init(&thread_pool, context.allocator, THREAD_COUNT)
 
     // Materials
-    material_ground := hittable.Lambertian{albedo = vec.Color{.8, .8, .0}}
-    material_center := hittable.Lambertian{albedo = vec.Color{.1, .2, .5}}
-    material_left := hittable.Dielectric{albedo = vec.Color{1, 1, 1}, refraction_index = 1.5}
-    material_bubble := hittable.Dielectric{albedo = vec.Color{1, 1, 1}, refraction_index = 1.0 / 1.5}
-    material_right := hittable.Metal{albedo = vec.Color{.8, .6, .2}, fuzz = 0.05}
+    material_ground := hittable.Lambertian{ albedo = vec.Color{ .8, .8, .0 } }
+    material_center := hittable.Lambertian{ albedo = vec.Color{ .1, .2, .5 } }
+    material_left := hittable.Dielectric{ albedo = vec.Color{ 1, 1, 1 }, refraction_index = 1.5 }
+    material_bubble := hittable.Dielectric{ albedo = vec.Color{ 1, 1, 1 }, refraction_index = 1.0 / 1.5 }
+    material_right := hittable.Metal{ albedo = vec.Color{ .8, .6, .2 }, fuzz = 0.05 }
 
     // World
     world : hittable.List
@@ -35,7 +35,17 @@ main :: proc() {
     hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ -1, 0, -1 }, radius = 0.4, material = material_bubble })
     hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 1, 0, -1 }, radius = 0.5, material = material_right })
 
-    cam := camera.default_setup(WIDTH, ASPECT_RATIO, CAMERA_SAMPLE_PER_PIXEL)
+    cam := camera.default_setup(
+    image_width=WIDTH,
+    aspect_ratio=ASPECT_RATIO,
+    samples_per_pixel=CAMERA_SAMPLE_PER_PIXEL,
+    vfov=90,
+    lookfrom=vec.Point3{ 0, 0, 0 },
+    lookat=vec.Point3{ 0, 0, -1 },
+    vup=vec.Point3{ 0, 1, 0 }
+    )
+
+    fmt.println("camera: ", cam)
 
     file, err := os.create("./out/out.ppm")
     if err != nil {
@@ -58,7 +68,7 @@ main :: proc() {
 
     thread.pool_start(&thread_pool)
     camera.render_threaded(cam, &img, world, &thread_pool)
-//    camera.render(cam, &img, world)
+    //    camera.render(cam, &img, world)
 
     elapsed := time.tick_since(start_time)
     fmt.println("Rendering took: ", time.duration_milliseconds(elapsed), "ms")

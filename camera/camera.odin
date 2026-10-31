@@ -23,6 +23,15 @@ Camera :: struct #all_or_none {
     pixel_delta_v: vec.Vec3,
     samples_per_pixel: uint,
     max_ray_depth: uint,
+
+    vfov: f64,
+    lookform: vec.Point3,
+    lookat: vec.Point3,
+    vup: vec.Vec3,
+
+    u: vec.Vec3,
+    v: vec.Vec3,
+    w: vec.Vec3
 }
 
 render :: proc(camera: Camera, img: ^image.Image, world: hittable.Hittable) {
@@ -236,25 +245,32 @@ render_threaded :: proc(camera: Camera, img: ^image.Image, world: hittable.Hitta
     }
 }
 
-default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: uint) -> Camera {
+default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: uint, vfov: f64, lookfrom: vec.Point3, lookat: vec.Point3, vup: vec.Vec3) -> Camera {
     image_height := uint(f64(image_width) / aspect_ratio)
     image_height = (image_height < 1) ? 1 : image_height
 
+    camera_center := lookfrom
+
     // Camera
-    focal_length := 1.0
-    viewport_height := 2.0
+    focal_length := vec.length((lookfrom - lookat))
+    theta := math.to_radians(vfov)
+    h := math.tan_f64(theta / 2)
+
+    viewport_height := 2 * h * focal_length
     viewport_width := viewport_height * (f64(image_width) / f64(image_height))
 
-    camera_center := vec.Point3{ 0, 0, 0 }
+    w := vec.unit(lookfrom - lookfrom)
+    u := vec.unit(vec.cross(vup, w))
+    v := vec.cross(w, u)
 
-    viewport_u := vec.Vec3{ viewport_width, 0, 0 }
-    viewport_v := vec.Vec3{ 0, -viewport_height, 0 }
+    viewport_u := viewport_width * u
+    viewport_v := viewport_height * -v
 
     pixel_delta_u := viewport_u / f64(image_width)
     pixel_delta_v := viewport_v / f64(image_height)
 
     // Upper left pixel
-    viewport_upper_left := camera_center - vec.Vec3{ 0, 0, focal_length } - viewport_u / 2 - viewport_v / 2
+    viewport_upper_left := camera_center - (focal_length * w) - viewport_u / 2 - viewport_v / 2
     pixel_start_loc := viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v)
 
     return Camera{
@@ -268,6 +284,13 @@ default_setup :: proc(image_width: uint, aspect_ratio: f64, samples_per_pixel: u
         samples_per_pixel = samples_per_pixel,
         pixel_samples_scale = 1.0 / f64(samples_per_pixel),
         max_ray_depth = 50,
+        vfov = vfov,
+        lookform = lookfrom,
+        lookat = lookat,
+        vup = vup,
+        w = w,
+        v = v,
+        u = u,
     }
 }
 
