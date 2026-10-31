@@ -4,6 +4,7 @@ import "../vec"
 import "../interval"
 import "core:bufio"
 import "core:fmt"
+import math "core:math"
 
 Image :: struct {
     height: uint,
@@ -15,6 +16,14 @@ Image :: struct {
 Type :: enum {
     Ppm_P6,
     Ppm_P3,
+}
+
+linear_to_gamma :: proc(x: f64) -> f64 {
+    if x > 0 {
+        return math.sqrt(x)
+    }
+
+    return 0
 }
 
 write_header :: proc(image: ^Image) {
@@ -53,9 +62,9 @@ write_pixel_p6 :: proc(image: ^Image, color: vec.Color) {
     intensity :: interval.Interval{ 0, 0.999 }
 
     pixelBuf := [3]u8{
-        u8(256 * interval.clamp(intensity, color.r)),
-        u8(256 * interval.clamp(intensity, color.g)),
-        u8(256 * interval.clamp(intensity, color.b)),
+        u8(256 * interval.clamp(intensity, linear_to_gamma(color.r))),
+        u8(256 * interval.clamp(intensity, linear_to_gamma(color.g))),
+        u8(256 * interval.clamp(intensity, linear_to_gamma(color.b))),
     }
     pixel := pixelBuf[:]
 
@@ -69,9 +78,9 @@ write_pixel_p3 :: proc(image: ^Image, color: vec.Color) {
     pixel := pixelBuf[:]
     pixelStr : string
 
-    ir := u64(256 * interval.clamp(intensity, color.r))
-    ig := u64(256 * interval.clamp(intensity, color.g))
-    ib := u64(256 * interval.clamp(intensity, color.b))
+    ir := u64(256 * interval.clamp(intensity, linear_to_gamma(color.r)))
+    ig := u64(256 * interval.clamp(intensity, linear_to_gamma(color.g)))
+    ib := u64(256 * interval.clamp(intensity, linear_to_gamma(color.b)))
 
     pixelStr = fmt.bprintf(pixel, "%d %d %d\n", ir, ig, ib)
     bufio.writer_write_string(&image.writer, pixelStr)

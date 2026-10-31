@@ -11,19 +11,27 @@ import thread "core:thread"
 import time "core:time"
 
 main :: proc() {
-    WIDTH :: 1920
+    WIDTH :: 400
     ASPECT_RATIO :: 16.0 / 9.0
-    CAMERA_SAMPLE_PER_PIXEL :: 100
-    THREAD_COUNT :: 12
+    CAMERA_SAMPLE_PER_PIXEL :: 1000
+    THREAD_COUNT :: 8
 
     thread_pool : thread.Pool
 
     thread.pool_init(&thread_pool, context.allocator, THREAD_COUNT)
 
+    // Materials
+    material_ground := hittable.Lambertian{albedo = vec.Color{.8, .8, .0}}
+    material_center := hittable.Lambertian{albedo = vec.Color{.1, .2, .5}}
+    material_left := hittable.Metal{albedo = vec.Color{.8, .8, .8}}
+    material_right := hittable.Metal{albedo = vec.Color{.8, .6, .2}}
+
     // World
     world : hittable.List
-    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 0, 0, -1 }, radius = 0.5 })
-    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 0, -100.5, -1 }, radius = 100 })
+    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 0, -100.5, -1 }, radius = 100, material = material_ground })
+    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 0, 0, -1.2 }, radius = 0.5, material = material_center })
+    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ -1, 0, -1 }, radius = 0.5, material = material_left })
+    hittable.list_add(&world, hittable.Sphere{ center = vec.Point3{ 1, 0, -1 }, radius = 0.5, material = material_right })
 
     cam := camera.default_setup(WIDTH, ASPECT_RATIO, CAMERA_SAMPLE_PER_PIXEL)
 

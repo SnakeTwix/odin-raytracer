@@ -11,6 +11,7 @@ HitRecord :: struct {
     normal: vec.Vec3,
     t: f64,
     front_face: bool,
+    material: Material,
 }
 
 Hittable :: union {
@@ -18,12 +19,13 @@ Hittable :: union {
     List,
 }
 
-Sphere :: struct {
+Sphere :: struct #all_or_none {
     center: vec.Point3,
     radius: f64,
+    material: Material,
 }
 
-sphere :: proc(sphere: Sphere, r: ray.Ray, ray_t: interval.Interval) -> (bool, HitRecord) {
+hit_sphere :: proc(sphere: Sphere, r: ray.Ray, ray_t: interval.Interval) -> (bool, HitRecord) {
     oc := sphere.center - r.origin
     a := vec.length_squared(r.direction)
     h := vec.dot(r.direction, oc)
@@ -47,6 +49,7 @@ sphere :: proc(sphere: Sphere, r: ray.Ray, ray_t: interval.Interval) -> (bool, H
     hr := HitRecord { }
     hr.t = root
     hr.point = ray.at(r, hr.t)
+    hr.material = sphere.material
 
     outward_normal := (hr.point - sphere.center) / sphere.radius
 
@@ -66,7 +69,7 @@ List :: struct {
     hittables: [dynamic]Hittable,
 }
 
-list :: proc(hittable_list: List, ray: ray.Ray, ray_t: interval.Interval) -> (bool, HitRecord) {
+hit_list :: proc(hittable_list: List, ray: ray.Ray, ray_t: interval.Interval) -> (bool, HitRecord) {
     hr := HitRecord { }
     hit_anything := false
     closest_so_far := ray_t.max
@@ -90,9 +93,9 @@ list_add :: proc (list: ^List, hittable: Hittable) {
 hit :: proc(hittable: Hittable, ray: ray.Ray, ray_t: interval.Interval) -> (bool, HitRecord) {
     switch shape in hittable {
     case Sphere:
-        return sphere(shape, ray, ray_t)
+        return hit_sphere(shape, ray, ray_t)
     case List:
-        return list(shape, ray, ray_t)
+        return hit_list(shape, ray, ray_t)
     }
 
     return false, HitRecord{ }
