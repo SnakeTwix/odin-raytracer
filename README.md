@@ -1,7 +1,5 @@
 ﻿# Odin raytracer
 
-------
-
 Raytracer written following the [first book](https://raytracing.github.io/books/RayTracingInOneWeekend.html) in the [Ray Tracing in One Weekend](https://raytracing.github.io) book series.
 
 <p align="center">
@@ -9,8 +7,6 @@ Raytracer written following the [first book](https://raytracing.github.io/books/
 </p>
 
 ## Implementation Details
-
-------
 
 As the spirit of the book goes - this is pretty much a 1-to-1 implementation of the C++ code the book provides with no external dependencies apart from what the odin language provides, with some additional features
 
@@ -26,8 +22,6 @@ As the spirit of the book goes - this is pretty much a 1-to-1 implementation of 
 - No memory leaks!
 
 ## Running the program
-
-------
 
 Assumes you're in the project directory
 
