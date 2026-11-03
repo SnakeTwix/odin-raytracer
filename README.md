@@ -5,7 +5,7 @@
 Raytracer written following the [first book](https://raytracing.github.io/books/RayTracingInOneWeekend.html) in the [Ray Tracing in One Weekend](https://raytracing.github.io) book series.
 
 <p align="center">
-    <img src="./out/img.png" alt="Picture of spheres rendered in 1200x675 res"/>
+    <img src="./out/img.webp" alt="Picture of spheres rendered in 1200x675 res"/>
 </p>
 
 ## Implementation Details
