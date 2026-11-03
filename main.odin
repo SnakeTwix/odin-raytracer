@@ -33,10 +33,10 @@ main :: proc() {
 
     }
 
-    WIDTH :: 400
+    WIDTH :: 1200
     ASPECT_RATIO :: 16.0 / 9.0
-    CAMERA_SAMPLE_PER_PIXEL :: 5
-    THREAD_COUNT :: 6
+    CAMERA_SAMPLE_PER_PIXEL :: 500
+    THREAD_COUNT :: 8
 
     thread_pool : thread.Pool
 
