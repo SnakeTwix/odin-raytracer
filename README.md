@@ -4,6 +4,10 @@
 
 Raytracer written following the [first book](https://raytracing.github.io/books/RayTracingInOneWeekend.html) in the [Ray Tracing in One Weekend](https://raytracing.github.io) book series.
 
+<p align="center">
+    <img src="out/img.png" alt="Picture of spheres rendered in 1200x675 res"/>
+</p>
+
 ## Implementation Details
 
 ------
@@ -20,3 +24,17 @@ As the spirit of the book goes - this is pretty much a 1-to-1 implementation of 
 
 
 - No memory leaks!
+
+## Running the program
+
+------
+
+Assumes you're in the project directory
+
+```bash
+odin run . # basic start
+
+odin run . -vet -strict-style -disallow-do -warnings-as-errors -o:speed # Speed
+
+odin run . -vet -strict-style -disallow-do -warnings-as-errors -debug # Debug (Tracking allocator)
+```
