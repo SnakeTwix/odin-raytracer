@@ -10,11 +10,32 @@ import "image"
 import thread "core:thread"
 import time "core:time"
 import "core:math/rand"
+import "core:mem"
+
+_ :: mem
 
 main :: proc() {
+//    when ODIN_DEBUG {
+//        track: mem.Tracking_Allocator
+//
+//        mem.tracking_allocator_init(&track, context.allocator)
+//        context.allocator = mem.tracking_allocator(&track)
+//
+//        defer {
+//            if len(track.allocation_map) > 0 {
+//                fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+//                for _, entry in track.allocation_map {
+//                    fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+//                }
+//            }
+//            mem.tracking_allocator_destroy(&track)
+//        }
+//
+//    }
+
     WIDTH :: 400
     ASPECT_RATIO :: 16.0 / 9.0
-    CAMERA_SAMPLE_PER_PIXEL :: 500
+    CAMERA_SAMPLE_PER_PIXEL :: 5
     THREAD_COUNT :: 6
 
     thread_pool : thread.Pool
@@ -101,6 +122,11 @@ main :: proc() {
 
     elapsed := time.tick_since(start_time)
     fmt.println("Rendering took: ", time.duration_milliseconds(elapsed), "ms")
+
+    delete(world.hittables)
+    // The thread can leaving hanging if don't wait for the pool to finish before freeing
+    thread.pool_join(&thread_pool)
+    thread.pool_destroy(&thread_pool)
 }
 
 

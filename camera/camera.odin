@@ -207,6 +207,17 @@ render_threaded :: proc(camera: Camera, img: ^image.Image, world: hittable.Hitta
     }
 
     image.finish(img)
+
+    // Freeing memory
+    for i := 0; i < len(row_buffers); i += 1 {
+        delete(row_buffers[i])
+    }
+    delete(row_buffers)
+    delete(rows_in_use)
+    delete(rendered_rows)
+    chan.destroy(input_ch)
+    chan.destroy(output_ch)
+
     fmt.println("Done.")
 }
 
